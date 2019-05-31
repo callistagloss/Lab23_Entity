@@ -1,6 +1,7 @@
 ﻿using Lab23_Breakout.Models;
 using System;
 using System.Collections.Generic;
+using System.Data.Entity.Migrations;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
@@ -13,15 +14,6 @@ namespace Lab23_Breakout.Controllers
 
         public ActionResult Index()
         {
-            //var user = Session["LoggedInUser"];
-            //List<User> p = (List<User>)user;
-            //User u = p[0];
-
-            //ViewBag.User = u;
-
-            User u = (User)Session["LoggedInUser"];
-
-            ViewBag.User = u;
 
             return View();
         }
@@ -47,9 +39,7 @@ namespace Lab23_Breakout.Controllers
         {
             db.Users.Add(u);
             db.SaveChanges();
-
-
-            return RedirectToAction("Shop");
+            return RedirectToAction("Login");
         }
         public ActionResult Login()
         {
@@ -57,60 +47,137 @@ namespace Lab23_Breakout.Controllers
         }
 
         [HttpPost]
-        public ActionResult Login(string userName, string Password)
+        public ActionResult Login(User u)
         {
-            List<User> Users = db.Users.ToList();
+            User user = db.Users.Where(user1 => user1.email == u.email && user1.password == u.password).ToList().First();
 
-            var output = Users
-            .Where(u =>
-            u.firstName == userName &&
-            u.password == Password);
+            Session["User"] = user;
+            return RedirectToAction("Shop");
 
-            foreach (User u in Users)
-            {
-                if(u.firstName == userName && u.password == Password)
-                {
-                    Session["LoggedInUser"] = u;
-                    Session["Cash"] = 250;
-                }
-            }
-            //string output = "";
-            Session["LoggedInUser"] = output;
+            //List<User> Users = db.Users.ToList();
 
-            return RedirectToAction("Index");
+            //var output = Users
+            //.Where(u =>
+            //u.firstName == userName &&
+            //u.password == Password);
+
+            //foreach (User u in Users)
+            //{
+            //    if (u.firstName == userName && u.password == Password)
+            //    {
+            //        Session["LoggedInUser"] = u;
+            //        Session["Cash"] = 10000;
+            //    }
+            //}
+            ////string output = "";
+            //Session["LoggedInUser"] = output;
+
+            //return RedirectToAction("Index");
         }
         public ActionResult Shop()
         {
-            List<Item> p = db.Items.ToList();
-            return View(p);
+            List<Item> itemList = db.Items.ToList();
+            return View(itemList);
         }
+        //public ActionResult Buy(int id)
+        //{
+        //    Item purchase = db.Items.Find(id);
+        //    if (Session["LoggedInUser"] == null)
+        //    {
+        //        User buyer = (User)Session["LoggedInUser"];
+
+        //        if (buyer.money > purchase.Price && purchase.Quantity > 0)
+        //        {
+        //            buyer.money = purchase.Price;
+        //            purchase.Quantity--;
+        //            db.Users.AddOrUpdate(buyer);
+        //            db.Items.AddOrUpdate(purchase);
+
+        //            db.SaveChanges();
+
+        //            return RedirectToAction("Shop");
+        //        }
+        //        else
+        //        {
+        //            return RedirectToAction("TooPoor");
+        //        }
+        //    }
+        //    return View();
+        //}
 
         [HttpPost]
-        public ActionResult Shop(int id)
+        public ActionResult BuyItem(Item i)
         {
-            List<Item> p = db.Items.ToList();
-            Session["Cash"] = 250;
-
-            foreach (Item i in p)
+            decimal cost = decimal.Parse(i.Price.ToString());
+            User user = (User)Session["User"];
+            if (user.money >= cost)
             {
-                if(i.id == id)
-                {
-                    if((int)Session["Cash"] >= i.Price)
-                    {
-                        Session["Cash"] = (int)Session["Cash"] - i.Price;
-                    
-                    }
-                    else
-                    {
-                        return RedirectToAction("TooPoor");
-                    }
-
-                }
-                
+                User user1 = db.Users.SingleOrDefault(u => u.id == user.id);
+                Item item = db.Items.SingleOrDefault(x => x.id == i.id);
+                decimal difference = decimal.Parse(user1.money.ToString()) - cost;
+                user1.money = difference;
+                item.Quantity -= 1;
+                UserItem ui = new UserItem() { ItemID = item.id, UserID = user1.id };
+                db.UserItems.Add(ui);
+                db.Users.AddOrUpdate(user1);
+                db.Items.AddOrUpdate(item);
+                //db.SaveChanges();
+                Session["User"] = user1;
             }
-            //figure out which item matches id, then use logged in cash session to see if they're too poor for the item
-            //if they have enough, set up a viewbag that displays how much money is left, else redirect to error page saying i'm poor
-            return View(p);
+            else
+            {
+                Session["UserFunds"] = user.money;
+                Session["ItemCost"] = i.Price;
+
+                return RedirectToAction("TooPoor");
+
+            }
+            return RedirectToAction("Shop");
+        }
+
+        //    public ActionResult Shop()
+        //{
+        //    List<Item> p = db.Items.ToList();
+        //    return View(p);
+        //}
+
+
+        //[HttpPost]
+        //public ActionResult Shop(int id)
+        //{
+        //    List<Item> p = db.Items.ToList();
+        //    Session["Cash"] = 250;
+
+        //    foreach (Item i in p)
+        //    {
+        //        if (i.id == id)
+        //        {
+        //            if ((int)Session["Cash"] >= i.Price)
+        //            {
+        //                Session["Cash"] = (int)Session["Cash"] - i.Price;
+
+        //            }
+        //            else
+        //            {
+        //                return RedirectToAction("TooPoor");
+        //            }
+
+        //        }
+
+        //    }
+        //    return View(p);
+
+
+        public ActionResult Logout()
+        {
+            Session["User"] = null;
+            return RedirectToAction("Login");
+        }
+
+        public ActionResult TooPoor()
+        {
+            return View();
         }
     }
 }
+    

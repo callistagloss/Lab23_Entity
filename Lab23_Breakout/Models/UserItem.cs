@@ -12,15 +12,13 @@ namespace Lab23_Breakout.Models
     using System;
     using System.Collections.Generic;
     
-    public partial class User
+    public partial class UserItem
     {
-        public int id { get; set; }
-        public string firstName { get; set; }
-        public string lastName { get; set; }
-        public string email { get; set; }
-        public string password { get; set; }
-        public Nullable<decimal> money { get; set; }
+        public int UserItemID { get; set; }
+        public Nullable<int> UserID { get; set; }
+        public Nullable<int> ItemID { get; set; }
     
-        public virtual UserItem UserItem { get; set; }
+        public virtual Item Item { get; set; }
+        public virtual User User { get; set; }
     }
 }

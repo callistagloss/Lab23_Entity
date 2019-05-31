@@ -17,7 +17,9 @@ namespace Lab23_Breakout.Models
         public int id { get; set; }
         public string ItemName { get; set; }
         public string Description { get; set; }
-        public string Quantity { get; set; }
+        public Nullable<int> Quantity { get; set; }
         public Nullable<decimal> Price { get; set; }
+    
+        public virtual UserItem UserItem { get; set; }
     }
 }
